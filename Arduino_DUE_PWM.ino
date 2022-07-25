@@ -9,7 +9,12 @@
 // Control Mode Select: 
 // • Phase Shift α (degrees) 5 to 175
 // • Duty Cycle S1&S2 (degrees) 0 to 95
-// • Dead Time insertion for Channel 0 and Channel 1
+// • Dead Time insertion for Channel 0 and Channel 1 (0-350)
+
+// PWM Set-up on pin PC2 (Arduino Pin 34) Select Instances = PWM; Signal PWML0; Channel 0
+// PWM Set-up on pin PC3 (Arduino Pin 35) Select Instances = PWM; Signal PWMH0; Channel 0
+// PWM Set-up on pin PC4 (Arduino Pin 36) Select Instances = PWM; Signal PWML1; Channel 1
+// PWM Set-up on pin PC5 (Arduino Pin 37) Select Instances = PWM; Signal PWMH1; Channel 1
 
 #include <stdio.h>
 #include <string.h>
@@ -24,25 +29,31 @@ float m_time = 0.00000000;
 float m_period = 0.00000000;
 
 void setup() {
-  // PWM Set-up on pin PC2 (Arduino Pin 34) Select Instances = PWM; Signal PWML0; Channel 0
-  // PWM Set-up on pin PC3 (Arduino Pin 35) Select Instances = PWM; Signal PWMH0; Channel 0
-  // PWM Set-up on pin PC4 (Arduino Pin 36) Select Instances = PWM; Signal PWML1; Channel 1
-  // PWM Set-up on pin PC5 (Arduino Pin 37) Select Instances = PWM; Signal PWMH1; Channel 1
+  PMC -> PMC_PCER1 |= PMC_PCER1_PID36; // Enable all PWM Registers (36 Peripheral IDs)
 
-  PMC -> PMC_PCER1 |= PMC_PCER1_PID36; // Enable PWM Registers (36 Peripheral IDs)
+  PWM->PWM_DIS = PWM_DIS_CHID0;        // Disable Channel 0 register for updates
+  PWM->PWM_DIS = PWM_DIS_CHID1;        // Disable Channel 1 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID2;        // Disable Channel 2 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID3;        // Disable Channel 3 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID4;        // Disable Channel 4 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID5;        // Disable Channel 5 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID6;        // Disable Channel 6 register for updates
+  //PWM->PWM_DIS = PWM_DIS_CHID7;        // Disable Channel 7 register for updates
 
-  PWM->PWM_DIS = PWM_DIS_CHID0;       // Disable Channel 0 register for updates
-  PWM->PWM_DIS = PWM_DIS_CHID1;       // Disable Channel 1 register for updates
-
-  REG_PIOC_ABSR |= PIO_ABSR_P2;       // Set PWM pin 34 perhipheral type B (I/O PWM pin function)
-  REG_PIOC_ABSR |= PIO_ABSR_P3;       // Set PWM pin 35 perhipheral type B (I/O PWM pin function)
-  REG_PIOC_ABSR |= PIO_ABSR_P4;       // Set PWM pin 36 perhipheral type B (I/O PWM pin function)
-  REG_PIOC_ABSR |= PIO_ABSR_P5;       // Set PWM pin 37 perhipheral type B (I/O PWM pin function)
-
-  REG_PIOC_PDR |= PIO_PDR_P2;         // Set PWM pin 34 to an output signal
-  REG_PIOC_PDR |= PIO_PDR_P3;         // Set PWM pin 35 to an output signal
-  REG_PIOC_PDR |= PIO_PDR_P4;         // Set PWM pin 36 to an output signal
-  REG_PIOC_PDR |= PIO_PDR_P5;         // Set PWM pin 37 to an output signal
+  REG_PIOC_ABSR |= PIO_ABSR_P2;        // Set PWM pin 34 perhipheral type B (I/O PWM pin function)
+  REG_PIOC_ABSR |= PIO_ABSR_P3;        // Set PWM pin 35 perhipheral type B (I/O PWM pin function)
+  REG_PIOC_ABSR |= PIO_ABSR_P4;        // Set PWM pin 36 perhipheral type B (I/O PWM pin function)
+  REG_PIOC_ABSR |= PIO_ABSR_P5;        // Set PWM pin 37 perhipheral type B (I/O PWM pin function)
+  //REG_PIOC_ABSR |= PIO_ABSR_P6;      // Set PWM pin 38 perhipheral type B (I/O PWM Pin function)
+  //REG_PIOC_ABSR |= PIO_ABSR_P7;      // Set PWM pin 39 perhipheral type B (I/O PWM Pin function)
+  //REG_PIOC_ABSR |= PIO_ABSR_P8;      // Set PWM pin 40 perhipheral type B (I/O PWM Pin function)
+  //REG_PIOC_ABSR |= PIO_ABSR_P9;      // Set PWM pin 41 perhipheral type B (I/O PWM Pin function)
+  //REG_PIOC_ABSR |= PIO_ABSR_P19;     // Set PWM pin 42 perhipheral type B (I/O PWM Pin function)
+  
+  REG_PIOC_PDR |= PIO_PDR_P2;          // Set PWM pin 34 to an output signal
+  REG_PIOC_PDR |= PIO_PDR_P3;          // Set PWM pin 35 to an output signal
+  REG_PIOC_PDR |= PIO_PDR_P4;          // Set PWM pin 36 to an output signal
+  REG_PIOC_PDR |= PIO_PDR_P5;          // Set PWM pin 37 to an output signal
 
   REG_PWM_CLK = PWM_CLK_PREA(0) | PWM_CLK_DIVA(1) | PWM_CLK_DIVB(1); // Set the PWM clock rate to 84MHz (84MHz/1). Adjust DIVA for the resolution. Generate a single CLK.
 
@@ -63,21 +74,21 @@ void setup() {
 
   REG_PWM_ENA = PWM_ENA_CHID0;  // Enable PWM channel 0
   REG_PWM_ENA = PWM_ENA_CHID1;  // Enable PWM Channel 1
-
-  Serial.begin(115200); // Programming Port Enabled on COM port (recommended)
-  //SerialUSB.begin(115200); // actives the Native USB serial port
-  Serial.println("(f) for Frequency in kHz");                 // Change frequnecy in kHz
+  
+  //SerialUSB.begin(115200); // Native USB serial port
+  Serial.begin(115200);      // Programming Port Enabled on COM port (recommended)
+  Serial.println("(f) for Frequency in kHz (5k-500k)");                 // Change frequnecy in kHz
   Serial.println("(d) for Duty Cycle in degrees (5-95)");     // duty cycle change of PWM pairs
   Serial.println("(p) for Phase Shift in degrees (0-175)");   // phase shift PWM pairs
-  Serial.println("(a) for Dead time insertion on Channel 0"); // Add deadtime to PWMH0
-  Serial.println("(b) for Dead Time insertion on Channel 1"); // Add deadtime to PWMH1
+  Serial.println("(a) for Dead time insertion on Channel 0 (0-350) ns"); // Add deadtime to PWMH0
+  Serial.println("(b) for Dead Time insertion on Channel 1 (0-350) ns"); // Add deadtime to PWMH1
   
   value = 420.0000;  // default frequency value
   f = 100000.000000; //default frequency 100KHz
 }
 void loop() {
   if(Serial.available()>0){
-    byte command = Serial.read();    // Serail read the incoming byte command
+    byte command = Serial.read();    // Serial read the incoming byte command
     if (command == 'f'){
       f = Serial.parseFloat();
       Serial.print("Frequency set to (kHz): ");
@@ -93,19 +104,19 @@ void loop() {
       float d = Serial.parseFloat();
       Serial.print("Duty cycle set to (degrees): ");
       Serial.println(d);
-      inverse_duty = 100.0000-d;      // sets inverse duty cycle for Channel 1
-      non_inverse = d/100.0000;       // Converts duty cycle from degress to value
+      inverse_duty = 100.0000-d;            // sets inverse duty cycle for Channel 1
+      non_inverse = d/100.0000;             // Converts duty cycle from degress to value
       inverse_duty = inverse_duty/100.0000; // Converst inverse duty from degrees to value
-      duty = non_inverse*value;       // multiplies duty cycle by the frequency value
-      duty2 = inverse_duty*value;     // multiplies inverse duty cycle by the frequency value
-      REG_PWM_CDTYUPD0 = duty;        // Update Duty Cycle register channel 0
-      REG_PWM_CDTYUPD1 = duty2;       // Update Duty Cycle register channel 1
-      REG_PWM_ENA = PWM_ENA_CHID0;    // enable channel 0
-      REG_PWM_ENA = PWM_ENA_CHID1;    // enable channel 1
+      duty = non_inverse*value;             // multiplies duty cycle by the frequency value
+      duty2 = inverse_duty*value;           // multiplies inverse duty cycle by the frequency value
+      REG_PWM_CDTYUPD0 = duty;              // Update Duty Cycle register channel 0
+      REG_PWM_CDTYUPD1 = duty2;             // Update Duty Cycle register channel 1
+      REG_PWM_ENA = PWM_ENA_CHID0;          // enable channel 0
+      REG_PWM_ENA = PWM_ENA_CHID1;          // enable channel 1
     }
     else if (command == 'p'){
-      PWM->PWM_DIS = PWM_DIS_CHID0;       // Disable Channel 0 for register changes 
-      PWM->PWM_DIS = PWM_DIS_CHID1;       // Disable Channel 1 for register changes
+      PWM->PWM_DIS = PWM_DIS_CHID0;         // Disable Channel 0 for register changes 
+      PWM->PWM_DIS = PWM_DIS_CHID1;         // Disable Channel 1 for register changes
       float p = Serial.parseFloat();
       Serial.print("Phase shift set to (degrees): ");
       Serial.println(p);
@@ -118,16 +129,15 @@ void loop() {
     }
     else if (command == 'a') {
       int t1 = Serial.parseInt(); // Parse the int value
-      Serial.print("Dead Time Insertion set for Channel 0: ");
-      Serial.print(t1);
-      REG_PWM_DTUPD0 = PWM_DT_DTH(t1) | PWM_DT_DTL(0); // Set Channel 0 dead-time on output PWML0/PWMH0
+      Serial.print("Dead Time Insertion for Channel 0 (ns): ");
+      Serial.println(t1);
+      REG_PWM_DTUPD0 = PWM_DT_DTH(t1) | PWM_DT_DTL(t1); // Set Channel 0 dead-time on output PWML0/PWMH0
     }
     else if (command == 'b') {
-      int t2 = Serial.parseInt(); // Parse the int value 
-      Serial.print("Dead Time Insertion set for Channel 1 : ");
-      Serial.print(t2);
-      REG_PWM_DTUPD1 = PWM_DT_DTH(t2) | PWM_DT_DTL(0); // Set channel 1 dead-time on output PWMH1/PWML1      
+      int t2 = Serial.parseInt(); // Parse the int value
+      Serial.print("Dead Time Insertion for Channel 1 (ns): ");
+      Serial.println(t2);
+      REG_PWM_DTUPD1 = PWM_DT_DTH(t2) | PWM_DT_DTL(t2); // Set channel 1 dead-time on output PWMH1/PWML1      
     }
  }
-
 }
